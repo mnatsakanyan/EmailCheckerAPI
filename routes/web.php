@@ -14,8 +14,8 @@
 Route::get('/', function () {
     return view('welcome');
 });
-
+/*
 Route::get('/apimail', function () {
     return view('send_mail');
-});
+});*/
 Route::post('/apimail', 'ApiController@ApiMail')->name('apimail');
