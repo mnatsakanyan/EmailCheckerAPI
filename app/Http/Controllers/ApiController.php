@@ -141,12 +141,15 @@ class ApiController extends Controller
         /**
          * Check which type  the mail belongs to
          */
-        if (preg_match('/@gmail.com/i', $email) || preg_match('/@hotmail.com/i', $email) || preg_match('/@live.com/i', $email) || preg_match('/@msn.com/i', $email) || preg_match('/@aol.com/i', $email) || preg_match('/@yahoo.com/i', $email) || preg_match('/@inbox.com/i', $email) || preg_match('/@gmx.com/i', $email) || preg_match('/@mail.ru/i', $email) || preg_match('/@me.com/i', $email)) {
+		  $email_domains = DB::table('email_domains')->select('email')->get();
+		   foreach ( $email_domains as  $email_domains_fm) {
+                
+        if (preg_match('/'.$email_domains_fm.'/i', $email)) {
             $emailInfo->provider = "Public Provider";
         } else {
             $emailInfo->provider = "Company's Email Server";
         }
-        
+		   }
         return $emailInfo;
         
     }
