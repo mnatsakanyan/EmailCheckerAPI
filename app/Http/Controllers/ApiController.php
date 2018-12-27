@@ -70,6 +70,7 @@ class ApiController extends Controller
             $imagestest = $xml->xpath('//img');
             if (!empty($imagestest)) {
                 foreach ($imagestest as $imgalt) {
+
                     $file_headers = @get_headers($imgalt['src']);
                     if (!$file_headers || (isset($file_headers[0]) && $file_headers[0] == 'HTTP/1.1 404 Not Found')) {
                         $errorList[] = "Image Not Found -> " . $imgalt["src"];
@@ -78,6 +79,11 @@ class ApiController extends Controller
                     if (!isset($imgalt['alt']) || empty($imgalt['alt'])) {
                         $errorList[] = "Image alt is missing -> " . $imgalt['src'];
                     }
+            
+                    if (!in_array(strtolower(pathinfo($imgalt['src'], PATHINFO_EXTENSION)), array('gif','jpg','jpeg','png','x-png','gif'))) {
+                     $errorList[] = 'not image';
+                    } 
+
                 }
             }
             
@@ -141,15 +147,15 @@ class ApiController extends Controller
         /**
          * Check which type  the mail belongs to
          */
-		  $email_domains = DB::table('email_domains')->select('email')->get();
-		   foreach ( $email_domains as  $email_domains_fm) {
-                
-        if (preg_match('/'.$email_domains_fm.'/i', $email)) {
+          $email_domains = DB::table('email_domains')->select('email')->get();
+           foreach ( $email_domains as  $email_domains_fm) {
+        if (preg_match('/'.$email_domains_fm->email.'/i', $email)) {
             $emailInfo->provider = "Public Provider";
+             break;
         } else {
             $emailInfo->provider = "Company's Email Server";
         }
-		   }
+           }
         return $emailInfo;
         
     }
@@ -165,20 +171,19 @@ class ApiController extends Controller
         $errorList = array();
         
         $dnsbl_lookup = DB::table('blacklisted')->select('blacklisted_host')->get();
-        $dnsbl_lookup = explode(',', $dnsbl_lookup);
         $listed       = array();
         if ($ip) {
             $reverse_ip = implode(".", array_reverse(explode(".", $ip)));
             
             foreach ($dnsbl_lookup as $host) {
-                if (checkdnsrr($reverse_ip . "." . $host . ".", "A")) {
-                    $listed[] = $host;
+                if (checkdnsrr($reverse_ip . "." . $host->blacklisted_host . ".", "A")) {
+                    $listed[] = $host->blacklisted_host;
                 }
             }
         }
-        /*if (count($listed) > 0) {
-        $errorList[] = '"A" record was not found ';
-        }*/
+         if(count($listed) > 0) {
+        $errorList[] =$host->blacklisted_host.'  Listed';
+        }
         
         if (isset($ip) && $ip != null) {
             $ip = $ip;
@@ -204,7 +209,7 @@ class ApiController extends Controller
         $responseObj             = new \stdClass();
         $responseObj->status     = "OK";
         $responseObj->error_list = array();
-        
+        $responseObj->incoming_date = array();
         /**
          * INPUT DATA
          *
@@ -220,17 +225,33 @@ class ApiController extends Controller
         if (!$name) {
             $responseObj->status       = "FAILED";
             $responseObj->error_list[] = 'Sender name cannot be empty';
+        }else{
+           
+           $responseObj->incoming_date[]= 'name :: '.$name;
+
         }
         
         if (!$email) {
             $responseObj->status       = "FAILED";
             $responseObj->error_list[] = 'Sender email cannot be empty';
             
+        }else{
+          
+           $responseObj->incoming_date[]= 'email :: '.$email;
+
         }
+        
         
         if (!$subject) {
             $responseObj->status       = "FAILED";
             $responseObj->error_list[] = 'Subject cannot be empty';
+        }else{
+          
+           $responseObj->incoming_date[]= 'subject :: '.$subject;
+
+        }
+        if($ip){
+           $responseObj->incoming_date[]= 'ip :: '.$ip ;
         }
         
         if (!$body) {
@@ -239,9 +260,12 @@ class ApiController extends Controller
             $responseObj->error_list[] = 'Email content cannot be empty';
             
         } else {
+             $responseObj->incoming_date[]= 'body :: '.html_entity_decode($body);
             $responseObj->content_plain_tet_size = strlen(strip_tags($body));
             $responseObj->content_html_size      = strlen($body);
         }
+
+
         
         /**
          * 

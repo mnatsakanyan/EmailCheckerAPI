@@ -15,7 +15,7 @@ class CreateBlacklistedTable extends Migration
     {
         Schema::create('blacklisted', function (Blueprint $table) {
             $table->increments('id');
-            $table->longText('blacklisted_host')->nullable();
+            $table->string('blacklisted_host')->nullable();
             $table->timestamps();
         });
     }
