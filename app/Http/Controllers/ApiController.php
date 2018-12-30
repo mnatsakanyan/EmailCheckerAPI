@@ -107,6 +107,28 @@ class ApiController extends Controller
                     }
                 }
             }
+			
+			
+			
+			
+			/**
+             *
+             * Check in body the links, i.e. if they are working links or not
+             */
+            $reg_exUrl = "#\bhttps?://[^,\s()<>]+(?:\([\w\d]+\)|([^,[:punct:]\s]|/))#";
+
+            if(preg_match_all($reg_exUrl, $body, $urls) > 0) {
+
+                foreach ($urls[0] as $url) {
+
+                   $file_headers = @get_headers($url);
+
+                    if (!$file_headers || (isset($file_headers[0]) && $file_headers[0] == 'HTTP/1.1 404 Not Found')) {
+
+                      $errorList[] = "link Not Found -> " . $url;
+                   }
+                } 
+            }
             
             libxml_clear_errors();
             
@@ -203,7 +225,26 @@ class ApiController extends Controller
         $email   = $request->input('email');
         $subject = $request->input('subject');
         $body    = $request->input('body');
-        $ip      = $request->input('ip');
+		
+		
+		
+			$ip ='';
+		if (isset($_SERVER['HTTP_CLIENT_IP']))
+			$ip = $_SERVER['HTTP_CLIENT_IP'];
+		else if(isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+			$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		else if(isset($_SERVER['HTTP_X_FORWARDED']))
+			$ip = $_SERVER['HTTP_X_FORWARDED'];
+		else if(isset($_SERVER['HTTP_FORWARDED_FOR']))
+			$ip = $_SERVER['HTTP_FORWARDED_FOR'];
+		else if(isset($_SERVER['HTTP_FORWARDED']))
+			$ip = $_SERVER['HTTP_FORWARDED'];
+		else if(isset($_SERVER['REMOTE_ADDR']))
+			$ip = $_SERVER['REMOTE_ADDR'];
+		else
+       
+		
+		
         libxml_use_internal_errors(true);
         
         $responseObj             = new \stdClass();
